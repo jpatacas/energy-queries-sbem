@@ -7,6 +7,18 @@ sio = socketio.Server(cors_allowed_origins="*")
 
 app = socketio.WSGIApp(sio)
 
+# inputs from the parquet file - see data dictionary file for more info: https://oedi-data-lake.s3.amazonaws.com/nrel-pds-building-stock/end-use-load-profiles-for-us-building-stock/2021/resstock_amy2018_release_1/data_dictionary.tsv
+# to do: get these from dataset and add BIM category at end
+orientation_cat = ['East','Northeast','North','Northwest','West','Southwest','South','Southeast','BIM']
+wall_cat = ['Brick, 12-in, 3-wythe, R-11','Brick, 12-in, 3-wythe, R-15','Brick, 12-in, 3-wythe, R-19','Brick, 12-in, 3-wythe, R-7','Brick, 12-in, 3-wythe, Uninsulated','CMU, 6-in Hollow, R-11','CMU, 6-in Hollow, R-15','CMU, 6-in Hollow, R-19','CMU, 6-in Hollow, R-7','CMU, 6-in Hollow, Uninsulated','Wood Stud, R-11','Wood Stud, R-15','Wood Stud, R-19','Wood Stud, R-7','Wood Stud, Uninsulated', 'BIM']
+window_cat = ['Double, Clear, Metal, Air','Double, Clear, Metal, Air, Exterior Clear Storm','Double, Clear, Non-metal, Air','Double, Clear, Non-metal, Air, Exterior Clear Storm','Double, Low-E, Non-metal, Air, M-Gain','Single, Clear, Metal','Single, Clear, Metal, Exterior Clear Storm','Single, Clear, Non-metal,','Single, Clear, Non-metal, Exterior Clear Storm','Triple, Low-E, Non-metal, Air, L-Gain','BIM']
+roof_cat = ['Finished, R-13','Finished, R-19','Finished, R-30','Finished, R-38','Finished, R-49','Finished, R-7','Finished, Uninsulated','Unfinished, Uninsulated', 'BIM']
+inf_cat = ['1 ACH50','10 ACH50','15 ACH50','2 ACH50','20 ACH50','25 ACH50','3 ACH50','30 ACH50','4 ACH50','40 ACH50','5 ACH50','50 ACH50','6 ACH50','7 ACH50','8 ACH50','BIM']
+plug_cat = ['50%', '100%', '200%', 'BIM']
+hvac_h_cat = ['Ducted Heat Pump','Ducted Heating','Non-Ducted Heating','None', 'BIM']
+hvac_c_cat = ['Central AC','Heat Pump','None','Room AC', 'BIM']
+pv_cat = ['1.0 kWDC','11.0 kWDC','13.0 kWDC','3.0 kWDC','5.0 kWDC','7.0 kWDC','9.0 kWDC','None', 'BIM']
+
 @sio.event
 def connect(sid, environ):
     print(sid, 'connected')
@@ -34,16 +46,16 @@ def ifcAreas(sid, data): # use the ifc data as input to the energy functions
     df_usage = df_initial(slabAreasqft,df_table_m2)
     df_bench = df_benchmark(df_usage)
 
-    df_ori = df_generic(df_usage, ['East','Northeast','North','Northwest','West','Southwest','South','Southeast','BIM'], 'in.orientation')
+    df_ori = df_generic(df_usage, orientation_cat, 'in.orientation')
     df_wwr = df_wwratio(df_usage, wwr)
-    df_wall = df_generic(df_usage, ['Brick, 12-in, 3-wythe, R-11','Brick, 12-in, 3-wythe, R-15','Brick, 12-in, 3-wythe, R-19','Brick, 12-in, 3-wythe, R-7','Brick, 12-in, 3-wythe, Uninsulated','CMU, 6-in Hollow, R-11','CMU, 6-in Hollow, R-15','CMU, 6-in Hollow, R-19','CMU, 6-in Hollow, R-7','CMU, 6-in Hollow, Uninsulated','Wood Stud, R-11','Wood Stud, R-15','Wood Stud, R-19','Wood Stud, R-7','Wood Stud, Uninsulated', 'BIM'], 'in.insulation_wall')
-    df_window = df_generic(df_usage, ['Double, Clear, Metal, Air','Double, Clear, Metal, Air, Exterior Clear Storm','Double, Clear, Non-metal, Air','Double, Clear, Non-metal, Air, Exterior Clear Storm','Double, Low-E, Non-metal, Air, M-Gain','Single, Clear, Metal','Single, Clear, Metal, Exterior Clear Storm','Single, Clear, Non-metal,','Single, Clear, Non-metal, Exterior Clear Storm','Triple, Low-E, Non-metal, Air, L-Gain','BIM'], 'in.windows')
-    df_roof = df_generic(df_usage, ['Finished, R-13','Finished, R-19','Finished, R-30','Finished, R-38','Finished, R-49','Finished, R-7','Finished, Uninsulated','Unfinished, Uninsulated', 'BIM'], 'in.insulation_roof')
-    df_inf = df_generic(df_usage, ['1 ACH50','10 ACH50','15 ACH50','2 ACH50','20 ACH50','25 ACH50','3 ACH50','30 ACH50','4 ACH50','40 ACH50','5 ACH50','50 ACH50','6 ACH50','7 ACH50','8 ACH50','BIM'], 'in.infiltration')
-    df_plug = df_generic(df_usage, ['50%', '100%', '200%', 'BIM'], 'in.plug_load_diversity')
-    df_hvac_h = df_generic(df_usage, ['Ducted Heat Pump','Ducted Heating','Non-Ducted Heating','None', 'BIM'] ,'in.hvac_heating_type')
-    df_hvac_c = df_generic(df_usage, ['Central AC','Heat Pump','None','Room AC', 'BIM'] , 'in.hvac_cooling_type' )
-    df_pv = df_generic (df_usage,  ['1.0 kWDC','11.0 kWDC','13.0 kWDC','3.0 kWDC','5.0 kWDC','7.0 kWDC','9.0 kWDC','None', 'BIM'], 'in.pv_system_size')
+    df_wall = df_generic(df_usage, wall_cat, 'in.insulation_wall')
+    df_window = df_generic(df_usage, window_cat, 'in.windows')
+    df_roof = df_generic(df_usage, roof_cat, 'in.insulation_roof')
+    df_inf = df_generic(df_usage, inf_cat, 'in.infiltration')
+    df_plug = df_generic(df_usage, plug_cat, 'in.plug_load_diversity')
+    df_hvac_h = df_generic(df_usage, hvac_h_cat ,'in.hvac_heating_type')
+    df_hvac_c = df_generic(df_usage, hvac_c_cat , 'in.hvac_cooling_type' )
+    df_pv = df_generic (df_usage,  pv_cat, 'in.pv_system_size')
 
     #emit the data for each graph
     sio.emit('df_benchmark', df_bench)
@@ -83,17 +95,16 @@ def updateFilter(sid, data):
     df_usage = df_uifilter(slabAreasqft, data, df_table_m2)
     df_bench = df_benchmark(df_usage) 
 
-    # inputs from the parquet file - see data dictionary file for more info: https://oedi-data-lake.s3.amazonaws.com/nrel-pds-building-stock/end-use-load-profiles-for-us-building-stock/2021/resstock_amy2018_release_1/data_dictionary.tsv
-    df_ori = df_generic(df_usage, ['East','Northeast','North','Northwest','West','Southwest','South','Southeast','BIM'], 'in.orientation')
+    df_ori = df_generic(df_usage, orientation_cat, 'in.orientation')
     df_wwr = df_wwratio(df_usage, wwr)
-    df_wall = df_generic(df_usage, ['Brick, 12-in, 3-wythe, R-11','Brick, 12-in, 3-wythe, R-15','Brick, 12-in, 3-wythe, R-19','Brick, 12-in, 3-wythe, R-7','Brick, 12-in, 3-wythe, Uninsulated','CMU, 6-in Hollow, R-11','CMU, 6-in Hollow, R-15','CMU, 6-in Hollow, R-19','CMU, 6-in Hollow, R-7','CMU, 6-in Hollow, Uninsulated','Wood Stud, R-11','Wood Stud, R-15','Wood Stud, R-19','Wood Stud, R-7','Wood Stud, Uninsulated', 'BIM'], 'in.insulation_wall')
-    df_window = df_generic(df_usage, ['Double, Clear, Metal, Air','Double, Clear, Metal, Air, Exterior Clear Storm','Double, Clear, Non-metal, Air','Double, Clear, Non-metal, Air, Exterior Clear Storm','Double, Low-E, Non-metal, Air, M-Gain','Single, Clear, Metal','Single, Clear, Metal, Exterior Clear Storm','Single, Clear, Non-metal,','Single, Clear, Non-metal, Exterior Clear Storm','Triple, Low-E, Non-metal, Air, L-Gain','BIM'], 'in.windows')
-    df_roof = df_generic(df_usage, ['Finished, R-13','Finished, R-19','Finished, R-30','Finished, R-38','Finished, R-49','Finished, R-7','Finished, Uninsulated','Unfinished, Uninsulated', 'BIM'], 'in.insulation_roof')
-    df_inf = df_generic(df_usage, ['1 ACH50','10 ACH50','15 ACH50','2 ACH50','20 ACH50','25 ACH50','3 ACH50','30 ACH50','4 ACH50','40 ACH50','5 ACH50','50 ACH50','6 ACH50','7 ACH50','8 ACH50','BIM'], 'in.infiltration')
-    df_plug = df_generic(df_usage, ['50%', '100%', '200%', 'BIM'], 'in.plug_load_diversity')
-    df_hvac_h = df_generic(df_usage, ['Ducted Heat Pump','Ducted Heating','Non-Ducted Heating','None', 'BIM'] ,'in.hvac_heating_type')
-    df_hvac_c = df_generic(df_usage, ['Central AC','Heat Pump','None','Room AC', 'BIM'] , 'in.hvac_cooling_type' )
-    df_pv = df_generic (df_usage,  ['1.0 kWDC','11.0 kWDC','13.0 kWDC','3.0 kWDC','5.0 kWDC','7.0 kWDC','9.0 kWDC','None', 'BIM'], 'in.pv_system_size')
+    df_wall = df_generic(df_usage, wall_cat, 'in.insulation_wall')
+    df_window = df_generic(df_usage, window_cat, 'in.windows')
+    df_roof = df_generic(df_usage, roof_cat, 'in.insulation_roof')
+    df_inf = df_generic(df_usage, inf_cat, 'in.infiltration')
+    df_plug = df_generic(df_usage, plug_cat, 'in.plug_load_diversity')
+    df_hvac_h = df_generic(df_usage, hvac_h_cat ,'in.hvac_heating_type')
+    df_hvac_c = df_generic(df_usage, hvac_c_cat , 'in.hvac_cooling_type' )
+    df_pv = df_generic (df_usage, pv_cat, 'in.pv_system_size')
 
     sio.emit('df_benchmark', df_bench) 
     sio.emit('df_orientation', df_ori)

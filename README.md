@@ -14,10 +14,10 @@ command line app to provide energy data for OSM buildings in JSON format (ComSto
 
 - [ResStock](https://data.openei.org/s3_viewer?bucket=oedi-data-lake&prefix=nrel-pds-building-stock%2Fend-use-load-profiles-for-us-building-stock%2F2021%2Fresstock_amy2018_release_1%2Fmetadata%2F) 
 
-- [Comstock](https://data.openei.org/s3_viewer?bucket=oedi-data-lake&prefix=nrel-pds-building-stock%2Fend-use-load-profiles-for-us-building-stock%2F2021%2Fcomstock_amy2018_release_1%2Fmetadata%2F)
+- [ComStock](https://data.openei.org/s3_viewer?bucket=oedi-data-lake&prefix=nrel-pds-building-stock%2Fend-use-load-profiles-for-us-building-stock%2F2021%2Fcomstock_amy2018_release_1%2Fmetadata%2F)
 
 2. Get geojson data for desired area from [overpass API](https://overpass-turbo.eu/)
 
-3. Run using: py .\energy-unity.py 'weather file name (from comstock/resstock data)' 'geojson input path' 'json output path'
+3. Run using: `py .\energy-unity.py 'weather file name (from comstock/resstock data)' 'geojson input path' 'json output path'`
 
-e.g. py .\energy-unity.py 'USA_CO_Denver.Internationa.725650_2018.epw' 'geojson/data-denver-new.geojson' 'json_output/buildings-energy.json'
+e.g. `py .\energy-unity.py 'USA_CO_Denver.Internationa.725650_2018.epw' 'geojson/data-denver-new.geojson' 'json_output/buildings-energy.json'`

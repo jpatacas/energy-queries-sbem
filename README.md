@@ -5,7 +5,7 @@ socket.io app to be used with the [SBEM IFC.js](https://github.com/jpatacas/sbem
 
 1. Add [.parquet file](https://data.openei.org/s3_viewer?bucket=oedi-data-lake&prefix=nrel-pds-building-stock%2Fend-use-load-profiles-for-us-building-stock%2F2021%2Fresstock_amy2018_release_1%2Fmetadata%2F) to /energydata folder 
 
-2. Run on Linux/WSL: gunicorn -k eventlet -w 1 --reload energy:app
+2. Run on Linux/WSL: `gunicorn -k eventlet -w 1 --reload energy:app`
 
 # energy-unity.py
 command line app to provide energy data for OSM buildings in JSON format (ComStock + ResStock)

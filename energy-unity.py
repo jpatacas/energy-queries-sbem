@@ -38,7 +38,7 @@ def features(data):
         else:
             data_array.append(df_com(elem, df_table_com, weather_file))
 
-    #build buildings object
+    #create buildings object
     buildings = Buildings()
     buildings.buildings = data_array
 
@@ -58,47 +58,77 @@ df_table_com = pa.Table.to_pandas(table_com)
 
 def df_com (feature, df_table_com, weather_file): #metrics are in consumption units
 
-    area_sqft = feature["area"] * 10.76391
+    area_sqft = feature["area"] * 10.76391  #* # area in sqft like in input data
+    area_m2 = feature["area"] 
 
     deltaGifa = area_sqft /3  # +- 33% of the initial area, otherwise won't get enough results 
 
     df_weather = df_table_com[(df_table_com['in.weather_file_2018'] == weather_file)]
 
+    #considering the whole area of the building (i.e. floor area * number of floors)
     df_area = df_weather[(df_weather['in.sqft']  < area_sqft + deltaGifa) & (df_weather['in.sqft']  > area_sqft - deltaGifa)]
 
     total_intensity = 0
     total_elec = 0
     total_naturalgas = 0
+    elec_cooling_energy = 0
+    elec_heating_energy = 0
+    int_light_elec= 0
+    heating_ngas = 0
+    ws_ngas = 0
 
     if not df_area.empty:
-        total_intensity = df_area['out.site_energy.total.energy_consumption'].values.mean() / feature["area"] #intensity = consumption / area
-        total_elec = df_area['out.electricity.total.energy_consumption'].values.mean() / feature["area"]
-        total_naturalgas = df_area['out.natural_gas.total.energy_consumption'].values.mean() / feature["area"]
+        total_intensity = df_area['out.site_energy.total.energy_consumption'].values.mean() / area_m2 #intensity = consumption / area - kWh/m2
+        total_elec = df_area['out.electricity.total.energy_consumption'].values.mean() / area_m2  
+        total_naturalgas = df_area['out.natural_gas.total.energy_consumption'].values.mean() / area_m2 
+        elec_cooling_energy = df_area['out.electricity.cooling.energy_consumption'].values.mean() / area_m2 
+        elec_heating_energy = df_area['out.electricity.heating.energy_consumption'].values.mean() / area_m2 
+        int_light_elec = df_area['out.electricity.interior_lighting.energy_consumption'].values.mean() / area_m2 
+        heating_ngas = df_area['out.natural_gas.heating.energy_consumption'].values.mean() / area_m2 
+        ws_ngas = df_area['out.natural_gas.water_systems.energy_consumption'].values.mean() / area_m2
 
-    com_dict = { 'id' : feature["id"], 'name': feature.get("name"), 'housenumber': feature.get("housenumber"), 'street' : feature.get("street"), 'area' : feature["area"], 'type' : feature["type"], 'total_intensity' : total_intensity, 'total_elec' : total_elec, 'total_naturalgas' : total_naturalgas}
+    com_dict = { 'id' : feature["id"], 'name': feature.get("name"), 'housenumber': feature.get("housenumber"), 
+                'street' : feature.get("street"), 'area' : area_m2, 'type' : feature["type"], 'total_intensity' : total_intensity, 'total_elec' : total_elec, 
+                'total_naturalgas' : total_naturalgas , 'cooling_energy' : elec_cooling_energy, 'heating_energy' : elec_heating_energy,
+                'int_light_elec': int_light_elec, 'heating_ngas': heating_ngas, 'ws_ngas': ws_ngas}
 
     return com_dict
 
 def df_res(feature, df_table_m2, weather_file): #metrics are in intensity units
 
-    deltaGifa = feature["area"] /2  # +- 50% of the initial area, otherwise won't get enough results 
+    #consider only floor area of buildings - i.e. total area / number of floors
+    area_sqft = feature["area"] / feature["building_levels"]
+
+    deltaGifa = area_sqft /2  # +- 50% of the initial area, otherwise won't get enough results 
 
     df_weather = df_table_m2[(df_table_m2['in.weather_file_2018'] == weather_file)]
  
     dfvacancy = df_weather[(df_weather['in.vacancy_status'] == 'Occupied')]
 
-    df_area = dfvacancy[(dfvacancy['in.floor_area_conditioned_ft_2']  < feature["area"] + deltaGifa) & (dfvacancy['in.floor_area_conditioned_ft_2']  > feature["area"] - deltaGifa)]
+    df_area = dfvacancy[(dfvacancy['in.floor_area_conditioned_ft_2']  < area_sqft + deltaGifa) & (dfvacancy['in.floor_area_conditioned_ft_2']  > area_sqft - deltaGifa)]
 
     total_intensity = 0
     total_elec = 0
     total_naturalgas = 0
+    elec_cooling_energy = 0
+    elec_heating_energy = 0
+    int_light_elec= 0
+    heating_ngas = 0
+    ws_ngas = 0
 
     if not df_area.empty:
         total_intensity =  df_area['out.site_energy.total.energy_consumption_intensity'].values.mean()
         total_elec = df_area['out.electricity.total.energy_consumption_intensity'].values.mean()
         total_naturalgas = df_area['out.natural_gas.total.energy_consumption_intensity'].values.mean()
+        elec_cooling_energy = df_area['out.electricity.cooling.energy_consumption_intensity'].values.mean() * 10.76391 # convert to kWh/m2
+        elec_heating_energy = df_area['out.electricity.heating.energy_consumption_intensity'].values.mean() * 10.76391
+        int_light_elec = df_area['out.electricity.interior_lighting.energy_consumption_intensity'].values.mean() * 10.76391
+        heating_ngas = df_area['out.natural_gas.heating.energy_consumption_intensity'].values.mean() * 10.76391
+        ws_ngas = df_area['out.natural_gas.water_systems.energy_consumption_intensity'].values.mean() * 10.76391
 
-    res_dict = { 'id' : feature["id"], 'name': feature.get("name"), 'housenumber': feature.get("housenumber"), 'street' : feature.get("street"), 'area' : feature["area"], 'type' : feature["type"], 'total_intensity' : total_intensity, 'total_elec' : total_elec, 'total_naturalgas' : total_naturalgas}
+    res_dict = { 'id' : feature["id"], 'name': feature.get("name"), 'housenumber': feature.get("housenumber"), 'street' : feature.get("street"), 
+                'area' : feature["area"], 'type' : feature["type"], 'total_intensity' : total_intensity, 'total_elec' : total_elec, 'total_naturalgas' : total_naturalgas,
+                'cooling_energy' : elec_cooling_energy, 'heating_energy': elec_heating_energy, 'int_light_elec': int_light_elec, 'heating_ngas': heating_ngas, 'ws_ngas': ws_ngas}
 
     return res_dict
 
@@ -120,7 +150,7 @@ def polygonArea(X, Y, n):
 	# Return absolute value
 	return int(abs(area / 2.0))
 
-def calcAreaGeoJson (coordArray):
+def calcAreaGeoJson (coordArray): # area in m
 
     transformer = Transformer.from_crs("EPSG:4326", "EPSG:3857")
 
@@ -144,7 +174,9 @@ def calcAreaGeoJson (coordArray):
 
             return geoJsonArea
 
-def getIdAreaGeoJson (features): # returns array of objects with { "id": id, "name": name, "housenumber": housenumber, "street": street, "area": area, "type": type} for geoJson files from overpass API 
+
+#this function gets the data from the geojson file
+def getIdAreaGeoJson (features): # returns array of objects with { "id": id, "name": name, "housenumber": housenumber, "street": street, "area": area, "type": type, "building_levels" : building_levels} for geoJson files from overpass API 
 
     geoObjArray = []
 
@@ -155,14 +187,15 @@ def getIdAreaGeoJson (features): # returns array of objects with { "id": id, "na
         name = features[i]['properties'].get("name")
         housenumber = features[i]['properties'].get("addr:housenumber")
         street = features[i]['properties'].get("addr:street")
+        building_levels = float(features[i]['properties'].get("building:levels") or 1)
 
         # remove node elements (area = 0)
         if 'node' not in id:
 
             coordsArray = features[i]['geometry']['coordinates']
-            area = calcAreaGeoJson(coordsArray)
+            area = calcAreaGeoJson(coordsArray) * building_levels
 
-            geoObj = { "id": id, "name": name, "housenumber": housenumber, "street": street, "area": area, "type": type}
+            geoObj = { "id": id, "name": name, "housenumber": housenumber, "street": street, "area": area, "type": type, "building_levels" : building_levels}
                 
             geoObjArray.append(geoObj)
 
@@ -190,7 +223,7 @@ f = open(json_input)
 # returns JSON object as a dictionary
 data = json.load(f)
 
-areas_data = getIdAreaGeoJson(data['features'])
+areas_data = getIdAreaGeoJson(data['features']) # floor area (1 floor)
 
 # e.g. building names in the OSM dataset (geojson input file)
 building_names = ["Coors Field","1144 Fifteenth","One Tabor Center","1801 California Street Building","Republic Plaza Building", "Colorado Convention Center", "Larimer Place Condos", "US Bank Tower", "Spire", "The Quincy", "Park Central", "17th Street Plaza", "Daniels And Fisher Tower"]
